@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 const { program } = require('commander');
 const pl = require('tau-prolog');
+require("tau-prolog/modules/promises.js")(pl);
 
 program
   .description('Timeplanning')
@@ -12,23 +13,18 @@ program.parse();
 // Prolog testing
 console.log("Prolog:");
 
-var session = pl.create();
+(async () => {
 
-session.consult(`
-    likes(sam, salad).
-    likes(dean, pie).
-    likes(sam, apples).
-    likes(dean, whiskey).
-`, {
-    success: () => {
-			console.log('success 1');
-		},
-    error: (err) => {
-			throw err;
-		}
-});
+	const program = `
+		plus(z, Y, Y).
+		plus(s(X), Y, s(Z)) :- plus(X, Y, Z).
+	`;
 
-session.query("likes(sam, X).", {
-    success: (goal) => { console.log(goal) },
-    error: (err) => { throw err; }
-});
+	const goal = "plus(X, Y, s(s(s(z)))).";
+	const session = pl.create();
+	await session.promiseConsult(program);
+	await session.promiseQuery(goal);
+
+	for await (let answer of session.promiseAnswers())
+		console.log(session.format_answer(answer));
+})();
